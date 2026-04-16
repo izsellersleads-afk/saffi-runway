@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
     // 3. 🔥 CONSUME (THIS IS REQUIRED FOR AvatarCall)
     const consumeRes = await fetch(
-      `https://api.dev.runwayml.com/v1/realtime_sessions/${sessionId}/consume`,
+  `https://api.runwayml.com/v1/realtime_sessions/${sessionId}/consume`,
       {
         method: "POST",
         headers: {
@@ -61,7 +61,10 @@ export async function POST(req: Request) {
     );
 
     const consumeData = await consumeRes.json();
-
+    if (!consumeData?.url) {
+       console.error("Consume response:", consumeData);
+       return Response.json({ error: "No connectUrl returned" }, { status: 500 });
+    }
     // 4. 🔥 RETURN connectUrl ONLY
     return Response.json({
       connectUrl: consumeData.url,
