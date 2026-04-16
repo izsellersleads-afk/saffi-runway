@@ -70,7 +70,7 @@ export async function POST(req: Request) {
 
     // 🔹 3. Consume session → required for AvatarCall
     const consumeRes = await fetch(
-      `https://api.runwayml.com/v1/realtime_sessions/${sessionId}/consume`,
+      `https://api.dev.runwayml.com/v1/realtime_sessions/${sessionId}/consume`,
       {
         method: "POST",
         headers: {
