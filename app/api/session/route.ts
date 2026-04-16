@@ -4,6 +4,9 @@ const client = new RunwayML({
   apiKey: process.env.RUNWAYML_API_SECRET!,
 });
 
+export async function GET() {
+  return Response.json({ message: "Session endpoint ready" });
+}
 export async function POST(req: Request) {
   try {
     const { avatarId } = await req.json();
