@@ -31,6 +31,7 @@ export default function Home() {
             const res = await fetch("/api/session", { method: "POST" });
             const data = await res.json();
             return data.connectUrl;
+            } as unknown as string}
         }}
         >
           <AvatarVideo />
