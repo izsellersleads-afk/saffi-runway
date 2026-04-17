@@ -4,31 +4,15 @@ const client = new RunwayML({
   apiKey: process.env.RUNWAYML_API_SECRET!,
 });
 
-// TEST GET (should ALWAYS return something visible)
+// ✅ SAFE GET (no session creation → no credit burn)
 export async function GET() {
-  try {
-    const session = await client.realtimeSessions.create({
-      model: "gwm1_avatars",
-      avatar: {
-        type: "custom",
-        avatarId: "406b979c-0fd3-42e9-9d42-f950406977c2",
-      },
-    });
-
-    return Response.json({
-      connectUrl: (session as any).connect_url,
-    });
-
-  } catch (err) {
-    console.error("GET SESSION ERROR:", err);
-    return Response.json(
-      { error: "Failed to create session" },
-      { status: 500 }
-    );
-  }
+  return Response.json({
+    status: "ok",
+    message: "Use POST to create session",
+  });
 }
 
-// REAL SESSION
+// ✅ REAL SESSION CREATION (only happens when frontend calls it)
 export async function POST() {
   try {
     const session = await client.realtimeSessions.create({
