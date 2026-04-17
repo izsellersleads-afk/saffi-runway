@@ -16,7 +16,7 @@ export async function POST() {
 
     // 🚨 DO NOT WAIT FOR READY
     return Response.json({
-      connectUrl: session.connect_url,
+      connectUrl: (session as any).connect_url,
     });
 
   } catch (err) {
