@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   AvatarCall,
   AvatarVideo,
@@ -7,6 +8,14 @@ import {
 } from "@runwayml/avatars-react";
 
 export default function Home() {
+  // 🔒 This prevents re-creation on every render
+  const requestData = useMemo(
+    () => ({
+      avatarId: "406b979c-0fd3-42e9-9d42-f950406977c2",
+    }),
+    []
+  );
+
   return (
     <main
       style={{
@@ -25,14 +34,13 @@ export default function Home() {
           border: "2px solid red",
         }}
       >
-      <AvatarCall
-        avatarId="406b979c-0fd3-42e9-9d42-f950406977c2"
-        connectUrl="/api/session"
-    
-      >
-        <AvatarVideo />
-         <ControlBar />
-       </AvatarCall>
+        <AvatarCall
+          connectUrl="/api/session"
+          requestData={requestData}
+        >
+          <AvatarVideo />
+          <ControlBar />
+        </AvatarCall>
       </div>
     </main>
   );
