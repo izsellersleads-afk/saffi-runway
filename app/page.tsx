@@ -1,44 +1,21 @@
 "use client";
 
-import {
-  AvatarCall,
-  AvatarVideo,
-  ControlBar,
-} from "@runwayml/avatars-react";
+import { useEffect, useState } from "react";
+import { AvatarCall } from "@runwayml/avatars-react";
 
 export default function Home() {
-  return (
-    <main
-      style={{
-        height: "100vh",
-        width: "100vw",
-        backgroundColor: "black",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <div
-        style={{
-          width: "900px",
-          height: "600px",
-          border: "2px solid red",
-        }}
-      >
-        <AvatarCall
-  avatarId="406b979c-0fd3-42e9-9d42-f950406977c2"
-  connectUrl={
-    (async () => {
-      const res = await fetch("/api/session", { method: "POST" });
-      const data = await res.json();
-      return data.connectUrl;
-    }) as unknown as string
-  }
->
-          <AvatarVideo />
-          <ControlBar />
-        </AvatarCall>
-      </div>
-    </main>
-  );
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/session", { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("CONNECT URL:", data.connectUrl);
+        setUrl(data.connectUrl);
+      });
+  }, []);
+
+  if (!url) return <div style={{ color: "white" }}>Loading...</div>;
+
+  return <AvatarCall connectUrl={url} />;
 }
