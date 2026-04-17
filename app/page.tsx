@@ -1,59 +1,67 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { AvatarCall } from "@runwayml/avatars-react";
+import { useEffect, useState } from "react";
+import {
+  AvatarCall,
+  AvatarVideo,
+  ControlBar,
+} from "@runwayml/avatars-react";
 
 export default function Home() {
   const [url, setUrl] = useState<string | null>(null);
-  const [error, setError] = useState(false);
-  const started = useRef(false);
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-
-    const startSession = async () => {
+    const createSession = async () => {
       try {
-        const res = await fetch("/api/session", { method: "POST" });
-
-        if (!res.ok) {
-          console.error("SESSION FAILED:", res.status);
-          setError(true); // 🚨 STOP EVERYTHING
-          return;
-        }
+        const res = await fetch("/api/session", {
+          method: "POST",
+        });
 
         const data = await res.json();
 
-        if (!data.connectUrl) {
-          console.error("NO CONNECT URL");
-          setError(true); // 🚨 STOP
-          return;
+        console.log("SESSION RESPONSE:", data);
+
+        if (data.connectUrl) {
+          setUrl(data.connectUrl);
         }
-
-        console.log("CONNECT URL:", data.connectUrl);
-        setUrl(data.connectUrl);
-
       } catch (err) {
-        console.error("FETCH ERROR:", err);
-        setError(true); // 🚨 STOP
+        console.error("SESSION FETCH ERROR:", err);
       }
     };
 
-    startSession();
+    createSession();
   }, []);
 
-  if (error) {
-    return <div style={{ color: "red" }}>Session failed. Stopped to prevent loop.</div>;
-  }
-
   if (!url) {
-    return <div style={{ color: "black" }}>Loading...</div>;
+    return <div style={{ color: "white" }}>Loading...</div>;
   }
 
   return (
-    <AvatarCall
-      avatarId="406b979c-0fd3-42e9-9d42-f950406977c2"
-      connectUrl={url}
-    />
+    <main
+      style={{
+        height: "100vh",
+        width: "100vw",
+        backgroundColor: "black",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <div
+        style={{
+          width: "900px",
+          height: "600px",
+          border: "2px solid red",
+        }}
+      >
+        <AvatarCall
+          avatarId="406b979c-0fd3-42e9-9d42-f950406977c2"
+          connectUrl={url}
+        >
+          <AvatarVideo />
+          <ControlBar />
+        </AvatarCall>
+      </div>
+    </main>
   );
 }
