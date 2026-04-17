@@ -26,14 +26,15 @@ export default function Home() {
         }}
       >
         <AvatarCall
-          avatarId="406b979c-0fd3-42e9-9d42-f950406977c2"
-          connectUrl={async () => {
-            const res = await fetch("/api/session", { method: "POST" });
-            const data = await res.json();
-            return data.connectUrl;
-            } as unknown as string}
-        }}
-        >
+  avatarId="406b979c-0fd3-42e9-9d42-f950406977c2"
+  connectUrl={
+    (async () => {
+      const res = await fetch("/api/session", { method: "POST" });
+      const data = await res.json();
+      return data.connectUrl;
+    }) as unknown as string
+  }
+>
           <AvatarVideo />
           <ControlBar />
         </AvatarCall>
