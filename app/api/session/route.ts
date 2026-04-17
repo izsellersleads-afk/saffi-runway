@@ -6,7 +6,7 @@ const client = new RunwayML({
 
 // ✅ Simple GET for testing route
 export async function GET() {
-  return Response.json({ message: "Session endpoint ready" });
+  return POST(new Request("http://localhost"));
 }
 
 // ✅ Main session creator
