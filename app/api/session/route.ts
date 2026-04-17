@@ -12,8 +12,7 @@ export async function GET() {
 // ✅ Main session creator
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const avatarId = body?.avatarId;
+    const avatarId = "406b979c-0fd3-42e9-9d42-f950406977c2";
 
     if (!avatarId) {
       return Response.json(
