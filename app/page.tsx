@@ -25,13 +25,15 @@ export default function Home() {
           border: "2px solid red",
         }}
       >
-        <AvatarCall
-          avatarId="406b979c-0fd3-42e9-9d42-f950406977c2"
-          connectUrl="/api/session"
-        >
-          <AvatarVideo />
-          <ControlBar />
-        </AvatarCall>
+       <AvatarCall
+         connectUrl="/api/session"
+         requestData={{
+           avatarId: "406b979c-0fd3-42e9-9d42-f950406977c2"
+         }}
+       >
+         <AvatarVideo />
+         <ControlBar />
+       </AvatarCall>
       </div>
     </main>
   );
