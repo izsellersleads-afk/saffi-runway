@@ -9,33 +9,74 @@ import {
 
 export default function Home() {
   const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true; // prevents duplicate updates
+
     const createSession = async () => {
+      console.log("🚀 Creating session...");
+
       try {
         const res = await fetch("/api/session", {
           method: "POST",
         });
 
+        if (!res.ok) {
+          throw new Error(`HTTP error ${res.status}`);
+        }
+
         const data = await res.json();
 
-        console.log("SESSION RESPONSE:", data);
+        console.log("✅ SESSION RESPONSE:", data);
 
-        if (data.connectUrl) {
-          setUrl(data.connectUrl);
+        if (isMounted) {
+          if (data?.connectUrl) {
+            setUrl(data.connectUrl);
+          } else {
+            setError("No connectUrl returned");
+          }
         }
-      } catch (err) {
-        console.error("SESSION FETCH ERROR:", err);
+      } catch (err: any) {
+        console.error("❌ SESSION FETCH ERROR:", err);
+        if (isMounted) {
+          setError(err.message || "Unknown error");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     createSession();
+
+    return () => {
+      isMounted = false; // cleanup
+    };
   }, []);
 
-  if (!url) {
-    return <div style={{ color: "white" }}>Loading...</div>;
+  // 🔄 Loading state
+  if (loading) {
+    return <div style={{ color: "white" }}>Loading session...</div>;
   }
 
+  // ❌ Error state
+  if (error) {
+    return (
+      <div style={{ color: "red" }}>
+        Error: {error}
+      </div>
+    );
+  }
+
+  // 🛑 Safety check
+  if (!url) {
+    return <div style={{ color: "white" }}>No session URL</div>;
+  }
+
+  // 🎥 Avatar render
   return (
     <main
       style={{
