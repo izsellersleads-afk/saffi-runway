@@ -17,5 +17,10 @@ export default function Home() {
 
   if (!url) return <div style={{ color: "white" }}>Loading...</div>;
 
-  return <AvatarCall connectUrl={url} />;
+  return (
+  <AvatarCall
+    avatarId="406b979c-0fd3-42e9-9d42-f950406977c2"
+    connectUrl={url}
+  />
+);
 }
