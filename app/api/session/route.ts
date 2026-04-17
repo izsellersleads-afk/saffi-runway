@@ -95,19 +95,18 @@ export async function POST(req: Request) {
       );
     }
 
-    const consumeData = await consumeRes.json();
+       const consumeText = await consumeRes.text();
+       console.log("🔥 CONSUME RAW:", consumeText);
 
-    if (!consumeData?.url) {
-      console.error("Consume response missing url:", consumeData);
-
-      return Response.json(
-        {
-          error: "No connectUrl returned",
-          details: consumeData,
-        },
-        { status: 500 }
-      );
-    }
+       let consumeData;
+       try {
+         consumeData = JSON.parse(consumeText);
+       } catch {
+         return Response.json(
+           { error: "Invalid JSON from consume", raw: consumeText },
+           { status: 500 }
+         );
+       }
 
     // 🔹 4. Return ONLY what frontend needs
     return Response.json({
