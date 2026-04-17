@@ -1,5 +1,7 @@
 import RunwayML from "@runwayml/sdk";
 
+export const dynamic = "force-dynamic";
+
 const client = new RunwayML({
   apiKey: process.env.RUNWAYML_API_SECRET!,
 });
