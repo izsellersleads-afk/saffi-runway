@@ -5,6 +5,7 @@ import { AvatarCall } from "@runwayml/avatars-react";
 
 export default function Home() {
   const [url, setUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const started = useRef(false);
 
   useEffect(() => {
@@ -17,6 +18,7 @@ export default function Home() {
 
         if (!res.ok) {
           console.error("SESSION FAILED:", res.status);
+          setError(true); // 🚨 STOP EVERYTHING
           return;
         }
 
@@ -24,18 +26,25 @@ export default function Home() {
 
         if (!data.connectUrl) {
           console.error("NO CONNECT URL");
+          setError(true); // 🚨 STOP
           return;
         }
 
         console.log("CONNECT URL:", data.connectUrl);
         setUrl(data.connectUrl);
+
       } catch (err) {
         console.error("FETCH ERROR:", err);
+        setError(true); // 🚨 STOP
       }
     };
 
     startSession();
   }, []);
+
+  if (error) {
+    return <div style={{ color: "red" }}>Session failed. Stopped to prevent loop.</div>;
+  }
 
   if (!url) {
     return <div style={{ color: "black" }}>Loading...</div>;
