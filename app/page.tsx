@@ -61,10 +61,13 @@ export default function Home() {
           border: "2px solid red",
         }}
       >
-        <AvatarCall sessionKey={sessionKey}>
+        <AvatarCall
+          avatarId="406b979c-0fd3-42e9-9d42-f950406977c2"
+          sessionKey={sessionKey}
+      >
           <AvatarVideo />
           <ControlBar />
-        </AvatarCall>
+      </AvatarCall>
       </div>
     </main>
   );
