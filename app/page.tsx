@@ -2,68 +2,35 @@
 
 import { useEffect, useState } from "react";
 import {
-  AvatarCall,
+  AvatarSession,
   AvatarVideo,
   ControlBar,
 } from "@runwayml/avatars-react";
 
 export default function Home() {
-  const [url, setUrl] = useState<string | null>(null);
+  const [creds, setCreds] = useState<any>(null);
 
   useEffect(() => {
     const createSession = async () => {
-      try {
-        const res = await fetch("/api/session", {
-          method: "POST",
-        });
+      const res = await fetch("/api/session", { method: "POST" });
+      const data = await res.json();
 
-        const data = await res.json();
+      console.log("CREDS:", data);
 
-        console.log("SESSION RESPONSE:", data);
-
-        // ✅ ONLY SET WHEN READY
-        if (data.connectUrl) {
-          setUrl(data.connectUrl);
-        } else {
-          console.warn("Session not ready yet");
-        }
-
-      } catch (err) {
-        console.error("SESSION FETCH ERROR:", err);
+      if (data.serverUrl) {
+        setCreds(data);
       }
     };
 
     createSession();
-  }, []); // 🔒 runs ONCE only
+  }, []);
 
-  if (!url) {
-    return (
-      <div style={{ color: "white" }}>
-        Waiting for session...
-      </div>
-    );
-  }
+  if (!creds) return <div style={{ color: "white" }}>Connecting...</div>;
 
   return (
-    <main
-      style={{
-        height: "100vh",
-        width: "100vw",
-        backgroundColor: "black",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <div style={{ width: "900px", height: "600px" }}>
-        <AvatarCall
-          avatarId="406b979c-0fd3-42e9-9d42-f950406977c2"
-          connectUrl={url}
-        >
-          <AvatarVideo />
-          <ControlBar />
-        </AvatarCall>
-      </div>
-    </main>
+    <AvatarSession credentials={creds} audio video>
+      <AvatarVideo />
+      <ControlBar />
+    </AvatarSession>
   );
 }

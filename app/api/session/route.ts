@@ -13,10 +13,10 @@ export async function GET() {
 
 export async function POST() {
   try {
-    console.log("🚀 Creating Runway session...");
+    console.log("🚀 Creating session...");
 
-    // STEP 1: CREATE SESSION
-    const session = await client.realtimeSessions.create({
+    // STEP 1: CREATE
+    const { id: sessionId } = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
         type: "custom",
@@ -24,36 +24,75 @@ export async function POST() {
       },
     });
 
-    console.log("🧠 SESSION CREATED:", session);
+    console.log("SESSION ID:", sessionId);
 
-    // STEP 2: WAIT (CRITICAL)
-    await new Promise((r) => setTimeout(r, 3000));
+    // STEP 2: POLL UNTIL READY
+    let sessionKey: string | undefined;
 
-    // STEP 3: GET SESSION STATUS
-    const status = await client.realtimeSessions.retrieve(session.id);
+    for (let i = 0; i < 15; i++) {
+      const session = await client.realtimeSessions.retrieve(sessionId);
 
-    console.log("📡 SESSION STATUS:", status);
+      console.log("STATUS:", session.status);
 
-    // 🔴 DO NOT FAIL IF connect_url IS MISSING
-    if (!(status as any).connect_url) {
-      console.log("⚠️ connect_url not ready yet");
+      if (session.status === "READY") {
+        sessionKey = session.sessionKey;
+        break;
+      }
 
-      return Response.json({
-        error: "Session not ready yet",
-        sessionId: session.id,
-      }, { status: 202 }); // ← IMPORTANT
+      if (session.status === "FAILED") {
+        return Response.json(
+          { error: "Session failed" },
+          { status: 500 }
+        );
+      }
+
+      await new Promise((r) => setTimeout(r, 1000));
     }
 
-    // STEP 4: SUCCESS
+    if (!sessionKey) {
+      return Response.json(
+        { error: "Session timeout" },
+        { status: 504 }
+      );
+    }
+
+    console.log("SESSION KEY:", sessionKey);
+
+    // STEP 3: CONSUME (THIS IS WHAT YOU WERE MISSING)
+    const consumeRes = await fetch(
+      `${client.baseURL}/v1/realtime_sessions/${sessionId}/consume`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${sessionKey}`,
+          "X-Runway-Version": "2024-11-06",
+        },
+      }
+    );
+
+    const creds = await consumeRes.json();
+
+    console.log("CREDENTIALS:", creds);
+
+    if (!creds?.url) {
+      return Response.json(
+        { error: "No credentials returned" },
+        { status: 500 }
+      );
+    }
+
+    // STEP 4: RETURN CORRECT FORMAT
     return Response.json({
-      connectUrl: (status as any).connect_url,
+      serverUrl: creds.url,
+      token: creds.token,
+      roomName: creds.roomName,
     });
 
   } catch (err) {
-    console.error("❌ SESSION ERROR:", err);
+    console.error("❌ ERROR:", err);
 
     return Response.json(
-      { error: "Failed to create session" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
