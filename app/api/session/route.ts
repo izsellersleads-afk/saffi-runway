@@ -4,20 +4,12 @@ const client = new RunwayML({
   apiKey: process.env.RUNWAYML_API_SECRET!,
 });
 
-// GET = sanity check (NO session creation)
-export async function GET() {
-  return Response.json({
-    status: "ok",
-    message: "Use POST to create session",
-  });
-}
-
-// POST = REAL session creation
 export async function POST() {
   try {
-    console.log("🚀 Creating Runway session...");
+    console.log("🚀 Creating session...");
 
-    const session = await client.realtimeSessions.create({
+    // 1. Create session
+    const { id: sessionId } = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
         type: "custom",
@@ -25,31 +17,64 @@ export async function POST() {
       },
     });
 
-    console.log("🧠 FULL SESSION OBJECT:", session);
+    console.log("🆔 SESSION ID:", sessionId);
 
-    // 🔴 SAFE extraction (no guessing)
-    const connectUrl =
-      (session as any)?.connectUrl ||
-      (session as any)?.connect_url ||
-      null;
+    // 2. Poll until READY
+    let sessionKey: string | null = null;
 
-    if (!connectUrl) {
-      console.error("❌ NO connectUrl FOUND");
+    for (let i = 0; i < 60; i++) {
+      const session = await client.realtimeSessions.retrieve(sessionId);
+
+      console.log("⏳ STATUS:", session.status);
+
+      if (session.status === "READY") {
+        sessionKey = session.sessionKey;
+        break;
+      }
+
+      if (session.status === "FAILED") {
+        console.error("❌ SESSION FAILED:", session.failure);
+        return Response.json(
+          { error: session.failure },
+          { status: 500 }
+        );
+      }
+
+      await new Promise(r => setTimeout(r, 1000));
+    }
+
+    if (!sessionKey) {
       return Response.json(
-        { error: "No connectUrl returned from Runway" },
-        { status: 500 }
+        { error: "Session timeout (never READY)" },
+        { status: 504 }
       );
     }
 
+    // 3. Consume session → get connectUrl
+    const consumeRes = await fetch(
+      `${client.baseURL}/v1/realtime_sessions/${sessionId}/consume`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${sessionKey}`,
+          "X-Runway-Version": "2024-11-06",
+        },
+      }
+    );
+
+    const data = await consumeRes.json();
+
+    console.log("🎯 CONSUME RESPONSE:", data);
+
     return Response.json({
-      connectUrl,
+      connectUrl: data.connectUrl,
     });
 
   } catch (err) {
-    console.error("❌ SESSION ERROR:", err);
+    console.error("❌ ERROR:", err);
 
     return Response.json(
-      { error: "Failed to create session" },
+      { error: "Session creation failed" },
       { status: 500 }
     );
   }
