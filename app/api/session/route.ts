@@ -10,7 +10,6 @@ export async function POST() {
 
     const avatarId = "REPLACE_WITH_YOUR_REAL_AVATAR_ID";
 
-    // STEP 1: create session
     const session = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
@@ -21,14 +20,25 @@ export async function POST() {
 
     console.log("SESSION CREATED:", session.id);
 
-    // STEP 2: retrieve session
-    const fullSession = await client.realtimeSessions.retrieve(session.id);
+    // 🔁 WAIT LOOP (THIS IS THE FIX)
+    let fullSession;
 
-    console.log("FULL SESSION:", fullSession);
+    for (let i = 0; i < 10; i++) {
+      await new Promise((r) => setTimeout(r, 1000)); // wait 1 sec
 
-    // ✅ SAFE CHECK (this fixes your error)
+      fullSession = await client.realtimeSessions.retrieve(session.id);
+
+      console.log("POLL:", fullSession);
+
+      if ("sessionKey" in fullSession) break;
+    }
+
+    // ✅ FINAL CHECK
     if (!("sessionKey" in fullSession)) {
-      throw new Error("Session not ready yet");
+      return Response.json(
+        { error: "Session not ready after retries" },
+        { status: 500 }
+      );
     }
 
     return Response.json({
