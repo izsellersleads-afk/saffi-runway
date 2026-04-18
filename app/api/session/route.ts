@@ -14,7 +14,7 @@ export async function POST() {
       model: "gwm1_avatars",
       avatar: {
         type: "custom",
-        avatarId: avatarId,
+        avatarId: "PASTE_REAL_UUID_HERE",
       },
     });
 
