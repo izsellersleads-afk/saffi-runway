@@ -4,19 +4,12 @@ const client = new RunwayML({
   apiKey: process.env.RUNWAYML_API_SECRET!,
 });
 
-export async function GET() {
-  return Response.json({
-    status: "ok",
-    message: "Use POST to create session",
-  });
-}
-
 export async function POST() {
   try {
-    console.log("🚀 Creating session...");
+    console.log("Creating Runway session...");
 
-    // STEP 1: CREATE
-    const { id: sessionId } = await client.realtimeSessions.create({
+    // 1️⃣ CREATE SESSION
+    const session = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
         type: "custom",
@@ -24,75 +17,52 @@ export async function POST() {
       },
     });
 
-    console.log("SESSION ID:", sessionId);
+    console.log("SESSION CREATED:", session);
 
-    // STEP 2: POLL UNTIL READY
-    let sessionKey: string | undefined;
+    if (!session?.id) {
+      throw new Error("No session ID returned");
+    }
 
-    for (let i = 0; i < 15; i++) {
-      const session = await client.realtimeSessions.retrieve(sessionId);
+    // 2️⃣ POLL SESSION UNTIL READY
+    let sessionData = null;
 
-      console.log("STATUS:", session.status);
-
-      if (session.status === "READY") {
-        sessionKey = session.sessionKey;
-        break;
-      }
-
-      if (session.status === "FAILED") {
-        return Response.json(
-          { error: "Session failed" },
-          { status: 500 }
-        );
-      }
+    for (let i = 0; i < 10; i++) {
+      console.log(`Polling session... attempt ${i + 1}`);
 
       await new Promise((r) => setTimeout(r, 1000));
-    }
 
-    if (!sessionKey) {
-      return Response.json(
-        { error: "Session timeout" },
-        { status: 504 }
+      const res = await fetch(
+        `https://api.dev.runwayml.com/v1/realtime/sessions/${session.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.RUNWAYML_API_SECRET}`,
+          },
+        }
       );
-    }
 
-    console.log("SESSION KEY:", sessionKey);
+      const data = await res.json();
 
-    // STEP 3: CONSUME (THIS IS WHAT YOU WERE MISSING)
-    const consumeRes = await fetch(
-      `${client.baseURL}/v1/realtime_sessions/${sessionId}/consume`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${sessionKey}`,
-          "X-Runway-Version": "2024-11-06",
-        },
+      console.log("SESSION STATUS:", data);
+
+      if (data?.status === "ready") {
+        sessionData = data;
+        break;
       }
-    );
-
-    const creds = await consumeRes.json();
-
-    console.log("CREDENTIALS:", creds);
-
-    if (!creds?.url) {
-      return Response.json(
-        { error: "No credentials returned" },
-        { status: 500 }
-      );
     }
 
-    // STEP 4: RETURN CORRECT FORMAT
+    if (!sessionData) {
+      throw new Error("Session never became ready");
+    }
+
+    // 3️⃣ RETURN CONNECT DATA
     return Response.json({
-      serverUrl: creds.url,
-      token: creds.token,
-      roomName: creds.roomName,
+      connectUrl: sessionData.connect_url,
     });
 
-  } catch (err) {
-    console.error("❌ ERROR:", err);
-
+  } catch (err: any) {
+    console.error("SESSION ERROR:", err);
     return Response.json(
-      { error: "Internal server error" },
+      { error: err.message || "Internal server error" },
       { status: 500 }
     );
   }
