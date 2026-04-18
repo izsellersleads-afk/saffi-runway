@@ -6,48 +6,29 @@ const client = new RunwayML({
 
 export async function POST() {
   try {
-    console.log("Creating Runway session...");
+    const avatarId = "406b979c-0fd3-42e9-9d42-f950406977c2";
 
-    const avatarId = "YOUR_REAL_AVATAR_ID";
+    console.log("AVATAR ID:", avatarId);
 
     const session = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
         type: "custom",
-        avatarId: "PASTE_REAL_UUID_HERE",
+        avatarId: avatarId,
+      },
+      client_credentials: {
+        type: "ephemeral",
       },
     });
 
-    console.log("SESSION CREATED:", session.id);
-
-    let fullSession: any = null;
-
-    for (let i = 0; i < 10; i++) {
-      await new Promise((r) => setTimeout(r, 1000));
-
-      fullSession = await client.realtimeSessions.retrieve(session.id);
-
-      console.log("POLL:", fullSession);
-
-      if (fullSession && "sessionKey" in fullSession) break;
-    }
-
-    if (!fullSession || !("sessionKey" in fullSession)) {
-      return Response.json(
-        { error: "Session not ready after retries" },
-        { status: 500 }
-      );
-    }
+    console.log("SESSION CREATED:", session);
 
     return Response.json({
-      sessionKey: fullSession.sessionKey,
+      connectUrl: session.connect_url,
     });
 
   } catch (err: any) {
-    console.error("ERROR:", err);
-    return Response.json(
-      { error: err.message || "internal error" },
-      { status: 500 }
-    );
+    console.error("SESSION ERROR:", err);
+    return Response.json({ error: err.message }, { status: 500 });
   }
 }
