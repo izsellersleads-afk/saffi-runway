@@ -30,11 +30,17 @@ export async function POST() {
     while (attempts < 20) {
       await new Promise((r) => setTimeout(r, 2000));
 
-      currentSession = await client.realtimeSessions.retrieve(session.id);
+      const session = await client.realtimeSessions.create({
+        model: "gwm1_avatars",
+        avatar: {
+          type: "custom",
+          avatarId: avatarId,
+        },
+      });
 
-      console.log("POLL:", currentSession.status);
-
-      if (currentSession.status === "READY") break;
+return Response.json({
+  sessionKey: session.sessionKey,
+});
 
       attempts++;
     }
