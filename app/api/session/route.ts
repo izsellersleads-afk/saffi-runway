@@ -10,7 +10,7 @@ export async function POST() {
 
     const avatarId = "REPLACE_WITH_YOUR_REAL_AVATAR_ID";
 
-    // STEP 1: Create session
+    // STEP 1: create session
     const session = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
@@ -21,13 +21,14 @@ export async function POST() {
 
     console.log("SESSION CREATED:", session.id);
 
-    // STEP 2: Retrieve session to get sessionKey
+    // STEP 2: retrieve session
     const fullSession = await client.realtimeSessions.retrieve(session.id);
 
     console.log("FULL SESSION:", fullSession);
 
-    if (!fullSession.sessionKey) {
-      throw new Error("No sessionKey returned");
+    // ✅ SAFE CHECK (this fixes your error)
+    if (!("sessionKey" in fullSession)) {
+      throw new Error("Session not ready yet");
     }
 
     return Response.json({
