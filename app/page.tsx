@@ -8,7 +8,12 @@ export default function Home() {
   useEffect(() => {
     console.log("🚀 USE EFFECT RUNNING");
 
-    fetch("/api/session", { method: "POST" })
+    fetch("/api/session", {
+      method: "POST", // 🔴 THIS IS THE FIX
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
       .then(res => res.json())
       .then(data => {
         console.log("✅ SESSION RESPONSE:", data);
