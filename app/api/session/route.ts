@@ -1,24 +1,14 @@
 import RunwayML from "@runwayml/sdk";
 
-// IMPORTANT: do NOT hardcode your key
 const client = new RunwayML({
   apiKey: process.env.RUNWAYML_API_SECRET!,
 });
 
-// OPTIONAL TEST ROUTE
-export async function GET() {
-  return Response.json({
-    status: "ok",
-    message: "Use POST to create session",
-  });
-}
-
-// MAIN SESSION CREATION
 export async function POST() {
   try {
     console.log("Creating Runway session...");
 
-    // STEP 1: create session
+    // STEP 1: Create session
     const session = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
@@ -29,41 +19,43 @@ export async function POST() {
 
     console.log("SESSION CREATED:", session);
 
-    const sessionId = (session as any).id;
-
-    // STEP 2: poll until READY
-    const deadline = Date.now() + 60000; // 60s timeout
-
-    while (Date.now() < deadline) {
-      const fullSession = await client.realtimeSessions.retrieve(sessionId);
-
-      console.log("POLL:", fullSession.status);
-
-      if (fullSession.status === "READY") {
-        console.log("SESSION READY!");
-
-        return Response.json({
-          sessionId: fullSession.id,
-          sessionKey: fullSession.sessionKey,
-        });
-      }
-
-      // wait 1 second between polls
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (!session?.id) {
+      throw new Error("Session ID missing");
     }
 
-    console.error("Session never became ready");
+    // STEP 2: Poll until READY
+    let attempts = 0;
+    let currentSession = session;
 
+    while (attempts < 20) {
+      await new Promise((r) => setTimeout(r, 2000));
+
+      currentSession = await client.realtimeSessions.retrieve(session.id);
+
+      console.log("POLL:", currentSession.status);
+
+      if (currentSession.status === "READY") break;
+
+      attempts++;
+    }
+
+    if (currentSession.status !== "READY") {
+      throw new Error("Session never became ready");
+    }
+
+    // STEP 3: Return sessionKey (NOT connect_url)
+    if (!currentSession.sessionKey) {
+      throw new Error("No sessionKey found");
+    }
+
+    return Response.json({
+      sessionKey: currentSession.sessionKey,
+    });
+
+  } catch (error: any) {
+    console.error("ERROR:", error);
     return Response.json(
-      { error: "Session never became ready" },
-      { status: 500 }
-    );
-
-  } catch (err: any) {
-    console.error("SESSION ERROR:", err);
-
-    return Response.json(
-      { error: err.message || "Internal server error" },
+      { error: error.message || "Internal server error" },
       { status: 500 }
     );
   }
