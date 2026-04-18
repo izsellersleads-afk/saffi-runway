@@ -8,9 +8,9 @@ export async function POST() {
   try {
     console.log("Creating Runway session...");
 
-    // 🔥 PUT YOUR REAL AVATAR ID HERE
-    const avatarId = "406b979c-0fd3-42e9-9d42-f950406977c2";
+    const avatarId = "REPLACE_WITH_YOUR_REAL_AVATAR_ID";
 
+    // STEP 1: Create session
     const session = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
@@ -21,8 +21,17 @@ export async function POST() {
 
     console.log("SESSION CREATED:", session.id);
 
+    // STEP 2: Retrieve session to get sessionKey
+    const fullSession = await client.realtimeSessions.retrieve(session.id);
+
+    console.log("FULL SESSION:", fullSession);
+
+    if (!fullSession.sessionKey) {
+      throw new Error("No sessionKey returned");
+    }
+
     return Response.json({
-      sessionKey: session.sessionKey,
+      sessionKey: fullSession.sessionKey,
     });
 
   } catch (err: any) {
