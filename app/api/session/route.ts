@@ -8,7 +8,7 @@ export async function POST() {
   try {
     console.log("Creating Runway session...");
 
-    const avatarId = "REPLACE_WITH_YOUR_REAL_AVATAR_ID";
+    const avatarId = "YOUR_REAL_AVATAR_ID";
 
     const session = await client.realtimeSessions.create({
       model: "gwm1_avatars",
@@ -20,21 +20,19 @@ export async function POST() {
 
     console.log("SESSION CREATED:", session.id);
 
-    // 🔁 WAIT LOOP (THIS IS THE FIX)
-    let fullSession;
+    let fullSession: any = null;
 
     for (let i = 0; i < 10; i++) {
-      await new Promise((r) => setTimeout(r, 1000)); // wait 1 sec
+      await new Promise((r) => setTimeout(r, 1000));
 
       fullSession = await client.realtimeSessions.retrieve(session.id);
 
       console.log("POLL:", fullSession);
 
-      if ("sessionKey" in fullSession) break;
+      if (fullSession && "sessionKey" in fullSession) break;
     }
 
-    // ✅ FINAL CHECK
-    if (!("sessionKey" in fullSession)) {
+    if (!fullSession || !("sessionKey" in fullSession)) {
       return Response.json(
         { error: "Session not ready after retries" },
         { status: 500 }
