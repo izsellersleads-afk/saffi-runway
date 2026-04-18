@@ -6,7 +6,7 @@ const client = new RunwayML({
 
 export async function POST() {
   try {
-    console.log("🚀 Creating session...");
+    console.log("Creating Runway session...");
 
     // 1. Create session
     const { id: sessionId } = await client.realtimeSessions.create({
@@ -17,15 +17,15 @@ export async function POST() {
       },
     });
 
-    console.log("🆔 SESSION ID:", sessionId);
+    console.log("Session created:", sessionId);
 
     // 2. Poll until READY
-    let sessionKey: string | null = null;
+    let sessionKey: string | undefined;
 
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 30; i++) {
       const session = await client.realtimeSessions.retrieve(sessionId);
 
-      console.log("⏳ STATUS:", session.status);
+      console.log("Polling status:", session.status);
 
       if (session.status === "READY") {
         sessionKey = session.sessionKey;
@@ -33,25 +33,18 @@ export async function POST() {
       }
 
       if (session.status === "FAILED") {
-        console.error("❌ SESSION FAILED:", session.failure);
-        return Response.json(
-          { error: session.failure },
-          { status: 500 }
-        );
+        return Response.json({ error: session.failure }, { status: 500 });
       }
 
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 1000));
     }
 
     if (!sessionKey) {
-      return Response.json(
-        { error: "Session timeout (never READY)" },
-        { status: 504 }
-      );
+      return Response.json({ error: "Session timed out" }, { status: 504 });
     }
 
-    // 3. Consume session → get connectUrl
-    const consumeRes = await fetch(
+    // 3. Consume session
+    const res = await fetch(
       `${client.baseURL}/v1/realtime_sessions/${sessionId}/consume`,
       {
         method: "POST",
@@ -62,19 +55,20 @@ export async function POST() {
       }
     );
 
-    const data = await consumeRes.json();
+    const data = await res.json();
 
-    console.log("🎯 CONSUME RESPONSE:", data);
+    console.log("CONSUME RESPONSE:", data);
 
     return Response.json({
-      connectUrl: data.connectUrl,
+      serverUrl: data.url,
+      token: data.token,
+      roomName: data.roomName,
     });
 
   } catch (err) {
-    console.error("❌ ERROR:", err);
-
+    console.error("SESSION ERROR:", err);
     return Response.json(
-      { error: "Session creation failed" },
+      { error: "Failed to create session" },
       { status: 500 }
     );
   }
