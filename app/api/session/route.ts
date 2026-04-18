@@ -8,60 +8,27 @@ export async function POST() {
   try {
     console.log("Creating Runway session...");
 
-    // STEP 1: Create session
+    // 🔥 PUT YOUR REAL AVATAR ID HERE
+    const avatarId = "406b979c-0fd3-42e9-9d42-f950406977c2";
+
     const session = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
         type: "custom",
-        avatarId: "406b979c-0fd3-42e9-9d42-f950406977c2",
+        avatarId: avatarId,
       },
     });
 
-    console.log("SESSION CREATED:", session);
-
-    if (!session?.id) {
-      throw new Error("Session ID missing");
-    }
-
-    // STEP 2: Poll until READY
-    let attempts = 0;
-    let currentSession = session;
-
-    while (attempts < 20) {
-      await new Promise((r) => setTimeout(r, 2000));
-
-      const session = await client.realtimeSessions.create({
-        model: "gwm1_avatars",
-        avatar: {
-          type: "custom",
-          avatarId: avatarId,
-        },
-      });
-
-return Response.json({
-  sessionKey: session.sessionKey,
-});
-
-      attempts++;
-    }
-
-    if (currentSession.status !== "READY") {
-      throw new Error("Session never became ready");
-    }
-
-    // STEP 3: Return sessionKey (NOT connect_url)
-    if (!currentSession.sessionKey) {
-      throw new Error("No sessionKey found");
-    }
+    console.log("SESSION CREATED:", session.id);
 
     return Response.json({
-      sessionKey: currentSession.sessionKey,
+      sessionKey: session.sessionKey,
     });
 
-  } catch (error: any) {
-    console.error("ERROR:", error);
+  } catch (err: any) {
+    console.error("ERROR:", err);
     return Response.json(
-      { error: error.message || "Internal server error" },
+      { error: err.message || "internal error" },
       { status: 500 }
     );
   }
