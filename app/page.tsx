@@ -2,35 +2,70 @@
 
 import { useEffect, useState } from "react";
 import {
-  AvatarSession,
+  AvatarCall,
   AvatarVideo,
   ControlBar,
 } from "@runwayml/avatars-react";
 
 export default function Home() {
-  const [creds, setCreds] = useState<any>(null);
+  const [sessionKey, setSessionKey] = useState<string | null>(null);
 
   useEffect(() => {
     const createSession = async () => {
-      const res = await fetch("/api/session", { method: "POST" });
-      const data = await res.json();
+      try {
+        const res = await fetch("/api/session", {
+          method: "POST",
+        });
 
-      console.log("CREDS:", data);
+        const data = await res.json();
 
-      if (data.serverUrl) {
-        setCreds(data);
+        console.log("SESSION RESPONSE:", data);
+
+        if (data.sessionKey) {
+          setSessionKey(data.sessionKey);
+        } else {
+          console.warn("No sessionKey, retrying...");
+          setTimeout(createSession, 2000);
+        }
+      } catch (err) {
+        console.error("SESSION FETCH ERROR:", err);
       }
     };
 
     createSession();
   }, []);
 
-  if (!creds) return <div style={{ color: "white" }}>Connecting...</div>;
+  if (!sessionKey) {
+    return (
+      <div style={{ color: "white" }}>
+        Connecting to SAFFI… this can take up to 30–60 seconds
+      </div>
+    );
+  }
 
   return (
-    <AvatarSession credentials={creds} audio video>
-      <AvatarVideo />
-      <ControlBar />
-    </AvatarSession>
+    <main
+      style={{
+        height: "100vh",
+        width: "100vw",
+        backgroundColor: "black",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <div
+        style={{
+          width: "900px",
+          height: "600px",
+          border: "2px solid red",
+        }}
+      >
+        <AvatarCall sessionKey={sessionKey}>
+          <AvatarVideo />
+          <ControlBar />
+        </AvatarCall>
+      </div>
+    </main>
   );
 }
