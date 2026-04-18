@@ -1,10 +1,11 @@
 import RunwayML from "@runwayml/sdk";
 
+// IMPORTANT: do NOT hardcode your key
 const client = new RunwayML({
   apiKey: process.env.RUNWAYML_API_SECRET!,
 });
 
-// OPTIONAL GET
+// OPTIONAL TEST ROUTE
 export async function GET() {
   return Response.json({
     status: "ok",
@@ -12,11 +13,12 @@ export async function GET() {
   });
 }
 
-// MAIN POST
+// MAIN SESSION CREATION
 export async function POST() {
   try {
     console.log("Creating Runway session...");
 
+    // STEP 1: create session
     const session = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
@@ -25,35 +27,41 @@ export async function POST() {
       },
     });
 
-    console.log("SESSION CREATED:", session.id);
+    console.log("SESSION CREATED:", session);
 
-    // ⏱️ INCREASE TIME + BETTER POLLING
-    const MAX_WAIT = 60000; // 60 seconds
-    const start = Date.now();
+    const sessionId = (session as any).id;
 
-    while (Date.now() - start < MAX_WAIT) {
-      const s = await client.realtimeSessions.retrieve(session.id);
+    // STEP 2: poll until READY
+    const deadline = Date.now() + 60000; // 60s timeout
 
-      console.log("POLL:", s.status);
+    while (Date.now() < deadline) {
+      const fullSession = await client.realtimeSessions.retrieve(sessionId);
 
-      if (s.status === "READY" && s.sessionKey) {
+      console.log("POLL:", fullSession.status);
+
+      if (fullSession.status === "READY") {
         console.log("SESSION READY!");
 
         return Response.json({
-          connectUrl: s.sessionKey,
+          sessionId: fullSession.id,
+          sessionKey: fullSession.sessionKey,
         });
       }
 
-      // ⏱️ Slightly faster retry
-      await new Promise((r) => setTimeout(r, 800));
+      // wait 1 second between polls
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
+
+    console.error("Session never became ready");
 
     return Response.json(
       { error: "Session never became ready" },
       { status: 500 }
     );
+
   } catch (err: any) {
     console.error("SESSION ERROR:", err);
+
     return Response.json(
       { error: err.message || "Internal server error" },
       { status: 500 }
