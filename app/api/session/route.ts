@@ -4,65 +4,75 @@ const client = new RunwayML({
   apiKey: process.env.RUNWAYML_API_SECRET!,
 });
 
+// OPTIONAL: GET (for browser test)
+export async function GET() {
+  return Response.json({
+    status: "ok",
+    message: "Use POST to create session",
+  });
+}
+
+// MAIN SESSION CREATION
 export async function POST() {
   try {
     console.log("Creating Runway session...");
 
-    // 1️⃣ CREATE SESSION
+    // STEP 1: CREATE SESSION
     const session = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
-        type: "custom",
-        avatarId: "406b979c-0fd3-42e9-9d42-f950406977c2",
+        type: "runway-preset",
+        presetId: "influencer",
       },
     });
 
     console.log("SESSION CREATED:", session);
 
-    if (!session?.id) {
-      throw new Error("No session ID returned");
-    }
-
-    // 2️⃣ POLL SESSION UNTIL READY
-    let sessionData = null;
-
-    for (let i = 0; i < 10; i++) {
-      console.log(`Polling session... attempt ${i + 1}`);
-
+    // STEP 2: POLL UNTIL READY
+    for (let i = 0; i < 20; i++) {
       await new Promise((r) => setTimeout(r, 1000));
 
       const res = await fetch(
-        `https://api.dev.runwayml.com/v1/realtime/sessions/${session.id}`,
+        `https://api.dev.runwayml.com/v1/realtime_sessions/${session.id}`,
         {
           headers: {
             Authorization: `Bearer ${process.env.RUNWAYML_API_SECRET}`,
+            "X-Runway-Version": "2024-11-06",
           },
         }
       );
 
       const data = await res.json();
+      console.log("POLL:", data);
 
-      console.log("SESSION STATUS:", data);
+      // SUCCESS CONDITION
+      if (data.status === "READY" && data.sessionKey) {
+        return Response.json({
+          connectUrl: data.sessionKey,
+        });
+      }
 
-      if (data?.status === "ready") {
-        sessionData = data;
-        break;
+      // FAIL FAST IF RUNWAY SAYS FAILED
+      if (data.status === "FAILED") {
+        console.error("SESSION FAILED:", data);
+        return Response.json(
+          { error: "Runway session failed", details: data },
+          { status: 500 }
+        );
       }
     }
 
-    if (!sessionData) {
-      throw new Error("Session never became ready");
-    }
-
-    // 3️⃣ RETURN CONNECT DATA
-    return Response.json({
-      connectUrl: sessionData.connect_url,
-    });
-
-  } catch (err: any) {
-    console.error("SESSION ERROR:", err);
+    // TIMEOUT
     return Response.json(
-      { error: err.message || "Internal server error" },
+      { error: "Session never became ready" },
+      { status: 500 }
+    );
+
+  } catch (err) {
+    console.error("SESSION ERROR:", err);
+
+    return Response.json(
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
