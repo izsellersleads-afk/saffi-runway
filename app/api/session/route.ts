@@ -10,15 +10,15 @@ export async function POST(req: Request) {
 
     if (!avatarId) {
       return Response.json(
-        { error: "Missing avatarId" },
+        { error: "avatarId is required" },
         { status: 400 }
       );
     }
 
-    console.log("➡️ Creating Runway session...");
+    console.log("➡️ Creating session...");
 
     // 1️⃣ CREATE SESSION
-    const { id: sessionId } = await client.realtimeSessions.create({
+    const session = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
         type: "custom",
@@ -26,25 +26,25 @@ export async function POST(req: Request) {
       },
     });
 
+    const sessionId = session.id;
+
     console.log("✅ Session created:", sessionId);
 
     // 2️⃣ POLL UNTIL READY
-    let sessionKey: string | undefined;
+    let readySession: any = null;
 
-    for (let i = 0; i < 60; i++) {
-      const session = await client.realtimeSessions.retrieve(sessionId);
+    for (let i = 0; i < 30; i++) {
+      const current = await client.realtimeSessions.retrieve(sessionId);
 
-      if (session.status === "READY") {
-        sessionKey = session.sessionKey;
-        console.log("✅ Session READY");
+      if (current.status === "READY") {
+        readySession = current;
         break;
       }
 
-      if (session.status === "FAILED") {
-        console.error("❌ Session FAILED:", session.failure);
-
+      if (current.status === "FAILED") {
+        console.error("❌ Session failed:", current);
         return Response.json(
-          { error: session.failure || "Session failed" },
+          { error: "Session failed" },
           { status: 500 }
         );
       }
@@ -52,47 +52,17 @@ export async function POST(req: Request) {
       await new Promise((r) => setTimeout(r, 1000));
     }
 
-    if (!sessionKey) {
-      console.error("❌ Session TIMEOUT");
-
+    if (!readySession) {
+      console.error("❌ Session timeout");
       return Response.json(
-        { error: "Session timed out" },
+        { error: "Session not ready" },
         { status: 504 }
       );
     }
 
-    // 3️⃣ CONSUME SESSION (CRITICAL STEP)
-    const consumeRes = await fetch(
-      `${client.baseURL}/v1/realtime_sessions/${sessionId}/consume`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${sessionKey}`,
-          "X-Runway-Version": "2024-11-06",
-        },
-      }
-    );
-
-    const credentials = await consumeRes.json();
-
-    if (!consumeRes.ok) {
-      console.error("❌ Consume failed:", credentials);
-
-      return Response.json(
-        { error: credentials },
-        { status: consumeRes.status }
-      );
-    }
-
-    console.log("✅ Credentials received");
-
-    // 4️⃣ RETURN WHAT FRONTEND NEEDS
-    return Response.json({
-      sessionId,
-      serverUrl: credentials.url,
-      token: credentials.token,
-      roomName: credentials.roomName,
-    });
+    // 3️⃣ RETURN FULL SESSION OBJECT (IMPORTANT)
+    // DO NOT strip fields
+    return Response.json(readySession);
 
   } catch (err: any) {
     console.error("❌ SERVER ERROR:", err);
@@ -104,9 +74,7 @@ export async function POST(req: Request) {
           err?.message ||
           "Unknown error",
       },
-      {
-        status: err?.status || 500,
-      }
+      { status: err?.status || 500 }
     );
   }
 }
