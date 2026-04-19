@@ -6,6 +6,8 @@ import {
   ControlBar,
 } from "@runwayml/avatars-react";
 
+import "@runwayml/avatars-react/styles.css";
+
 export default function Home() {
   return (
     <main
@@ -27,40 +29,7 @@ export default function Home() {
       >
         <AvatarCall
           avatarId="406b979c-0fd3-42e9-9d42-f950406977c2"
-
-          connect={async (avatarId) => {
-            console.log("Creating session for avatar:", avatarId);
-
-            const res = await fetch("/api/session", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ avatarId }),
-            });
-
-            const data = await res.json();
-
-            console.log("SESSION RESPONSE:", data);
-
-            if (!res.ok) {
-              throw new Error("Session failed");
-            }
-
-            return data;
-          }}
-
-          onConnected={() => {
-            console.log("✅ CONNECTED TO AVATAR");
-          }}
-
-          onDisconnected={() => {
-            console.log("❌ DISCONNECTED");
-          }}
-
-          onError={(err) => {
-            console.error("🚨 AVATAR ERROR:", err);
-          }}
+          connectUrl="/api/session"
         >
           <AvatarVideo />
           <ControlBar />
