@@ -10,23 +10,45 @@ export async function POST() {
 
     console.log("AVATAR ID:", avatarId);
 
-    const session = await client.realtimeSessions.create({
+    // 1. CREATE SESSION
+    const { id: sessionId } = await client.realtimeSessions.create({
       model: "gwm1_avatars",
       avatar: {
         type: "custom",
-        avatarId: avatarId,
+        avatarId,
       },
     });
 
-    console.log("SESSION CREATED:", session);
+    console.log("SESSION CREATED:", sessionId);
 
-    // IMPORTANT: correct field name
-    if (!session.connect_url) {
-      throw new Error("No connect_url returned from Runway");
+    // 2. POLL UNTIL READY
+    let sessionKey: string | undefined;
+
+    for (let i = 0; i < 20; i++) {
+      await new Promise((r) => setTimeout(r, 1000));
+
+      const session = await client.realtimeSessions.retrieve(sessionId);
+
+      console.log("POLL:", session);
+
+      if (session.status === "READY") {
+        sessionKey = session.sessionKey;
+        break;
+      }
+
+      if (session.status === "FAILED") {
+        throw new Error("Session failed");
+      }
     }
 
+    if (!sessionKey) {
+      throw new Error("Session never became ready");
+    }
+
+    // 3. RETURN SESSION KEY (NOT connect_url)
     return Response.json({
-      connectUrl: session.connect_url,
+      sessionKey,
+      sessionId,
     });
 
   } catch (err: any) {
