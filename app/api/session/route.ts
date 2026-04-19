@@ -4,11 +4,12 @@ const client = new RunwayML({
   apiKey: process.env.RUNWAYML_API_SECRET!,
 });
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    const avatarId = "406b979c-0fd3-42e9-9d42-f950406977c2";
+    // ✅ IMPORTANT: receive avatarId from frontend
+    const { avatarId } = await req.json();
 
-    console.log("Creating Runway session...");
+    console.log("Creating Runway session for:", avatarId);
 
     const session = await client.realtimeSessions.create({
       model: "gwm1_avatars",
@@ -20,7 +21,6 @@ export async function POST() {
 
     console.log("SESSION CREATED:", session.id);
 
-    // ✅ IMPORTANT: return ONLY sessionId
     return Response.json({
       sessionId: session.id,
     });
