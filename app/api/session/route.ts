@@ -45,16 +45,31 @@ export async function POST(req: Request) {
       throw new Error("Session never became ready");
     }
 
-    // 3. RETURN SESSION KEY (CRITICAL)
-    return Response.json({
-      sessionKey,
-    });
+    // 3. 🔥 CONSUME SESSION (THIS IS WHAT YOU WERE MISSING)
+    const consumeRes = await fetch(
+      `https://api.dev.runwayml.com/v1/realtime_sessions/${sessionId}/consume`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${sessionKey}`,
+          "Content-Type": "application/json",
+          "X-Runway-Version": "2024-11-06",
+        },
+      }
+    );
+
+    const credentials = await consumeRes.json();
+
+    console.log("CONSUME RESPONSE:", credentials);
+
+    // 4. RETURN FULL CREDENTIALS
+    return Response.json(credentials);
 
   } catch (err: any) {
     console.error("SESSION ERROR:", err);
 
     return Response.json(
-      { error: err.message },
+      { error: err?.message || "Unknown error" },
       { status: 500 }
     );
   }
