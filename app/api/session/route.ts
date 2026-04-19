@@ -16,12 +16,14 @@ export async function POST() {
         type: "custom",
         avatarId: avatarId,
       },
-      client_credentials: {
-        type: "ephemeral",
-      },
     });
 
     console.log("SESSION CREATED:", session);
+
+    // IMPORTANT: correct field name
+    if (!session.connect_url) {
+      throw new Error("No connect_url returned from Runway");
+    }
 
     return Response.json({
       connectUrl: session.connect_url,
@@ -29,6 +31,9 @@ export async function POST() {
 
   } catch (err: any) {
     console.error("SESSION ERROR:", err);
-    return Response.json({ error: err.message }, { status: 500 });
+    return Response.json(
+      { error: err.message || "Unknown error" },
+      { status: 500 }
+    );
   }
 }
