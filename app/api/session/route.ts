@@ -14,8 +14,7 @@ export async function POST(req: Request) {
         type: "custom",
         avatarId: avatarId,
       },
-      // ✅ NO client_credentials — this is what was breaking connect_url
-    });
+    }) as any; // bypass SDK typing gap
 
     console.log("SESSION RESPONSE:", JSON.stringify(session));
 
