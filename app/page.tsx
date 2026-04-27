@@ -26,7 +26,10 @@ export default function SaffiPage() {
           Start SAFFI
         </button>
       ) : (
-        <AvatarCall connectUrl={connectUrl} />
+        <AvatarCall 
+          connectUrl={connectUrl} 
+          avatarId="406b979c-0fd3-42e9-9d42-f950406977c2" 
+      />
       )}
     </div>
   );
