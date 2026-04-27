@@ -14,13 +14,12 @@ export async function POST(req: Request) {
         type: "custom",
         avatarId: avatarId,
       },
-    }) as any; // bypass SDK typing gap
+    }) as any;
 
-    console.log("SESSION RESPONSE:", JSON.stringify(session));
+    console.log("FULL SESSION:", JSON.stringify(session));
 
-    return Response.json({
-      connectUrl: session.connect_url,
-    });
+    // Temporary debug — return everything
+    return Response.json(session);
 
   } catch (err: any) {
     console.error("SESSION ERROR:", JSON.stringify(err));
