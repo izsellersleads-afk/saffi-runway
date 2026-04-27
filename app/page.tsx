@@ -1,40 +1,28 @@
 "use client";
 
-import {
-  AvatarCall,
-  AvatarVideo,
-  ControlBar,
-} from "@runwayml/avatars-react";
+import { AvatarCall } from "@runwayml/avatars-react";
 
-import "@runwayml/avatars-react/styles.css";
-
-export default function Home() {
+export default function SaffiPage() {
   return (
-    <main
-      style={{
-        height: "100vh",
-        width: "100vw",
-        backgroundColor: "black",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <div
-        style={{
-          width: "900px",
-          height: "600px",
-          border: "2px solid red",
+    <div style={{ height: "100vh", width: "100vw" }}>
+      <AvatarCall
+        connect={async () => {
+          const res = await fetch("/api/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              avatarId: "406b979c-0fd3-42e9-9d42-f950406977c2",
+            }),
+          });
+
+          const data = await res.json();
+          console.log("FRONTEND SESSION:", data);
+
+          return {
+            connectUrl: data.connectUrl,
+          };
         }}
-      >
-        <AvatarCall
-          avatarId="406b979c-0fd3-42e9-9d42-f950406977c2"
-          connectUrl="/api/session"
-        >
-          <AvatarVideo />
-          <ControlBar />
-        </AvatarCall>
-      </div>
-    </main>
+      />
+    </div>
   );
 }
