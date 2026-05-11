@@ -1,9 +1,27 @@
 import type { NextConfig } from 'next';
-import { join } from 'path';
 
 const nextConfig: NextConfig = {
-  outputFileTracingRoot: join(__dirname),
-  transpilePackages: ['@runwayml/avatars-react'],
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+              "connect-src 'self' wss: https: *.runwayml.com *.livekit.cloud",
+              "media-src 'self' blob: mediastream:",
+              "img-src 'self' blob: data:",
+              "style-src 'self' 'unsafe-inline'",
+              "worker-src blob:",
+            ].join('; '),
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
