@@ -37,12 +37,16 @@ export async function POST(req: Request) {
       },
     }
   );
+
   const credentials = await consumeResponse.json();
+  console.log("CONSUME STATUS:", consumeResponse.status);
+  console.log("CONSUME RESPONSE:", JSON.stringify(credentials));
 
   return Response.json({
     sessionId,
     serverUrl: credentials.url,
     token: credentials.token,
     roomName: credentials.roomName,
+    _debug: credentials,
   });
 }
